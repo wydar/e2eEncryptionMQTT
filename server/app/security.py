@@ -20,7 +20,7 @@ nonce = os.urandom(13)
 aad = b"authenticated but unencrypted data"
 
 def gen_keys():
-    parameters = dh.generate_parameters(generator=2, key_size=512, backend=default_backend())
+    #parameters = dh.generate_parameters(generator=2, key_size=512, backend=default_backend())
 
     p = 0xFFFFFFFFFFFFFFFFC90FDAA22168C234C4C6628B80DC1CD129024E088A67CC74020BBEA63B139B22514A08798E3404DDEF9519B3CD3A431B302B0A6DF25F14374FE1356D6D51C245E485B576625E7EC6F44C42E9A637ED6B0BFF5CB6F406B7EDEE386BFB5A899FA5AE9F24117C4B1FE649286651ECE45B3DC2007CB8A163BF0598DA48361C55D39A69163FA8FD24CF5F83655D23DCA3AD961C62F356208552BB9ED529077096966D670C354E4ABC9804F1746C08CA18217C32905E462E36CE3BE39E772C180E86039B2783A2EC07A28FB5C55DF06F4C52C9DE2BCBF6955817183995497CEA956AE515D2261898FA051015728E5A8AACAA68FFFFFFFFFFFFFFFF
     g = 2
@@ -44,13 +44,11 @@ def set_derivated_key(response):
     print(client_pub_key)
     shared_key = priv_key.exchange(client_pub_key)
     print('---clave compartida creada')
-    print(shared_key)
     global derivated_key
     print('---creando clave derivada...')
     #derivated_key = HKDF(algorithm=hashes.SHA256(), length=32, salt='E2Eencrpytion', info=b'handshake data', backend=default_backend()).derive(shared_key)
     derivated_key = PBKDF2HMAC(algorithm=hashes.SHA256(), length=32, salt=b'jeje', iterations=100000, backend=default_backend()).derive(shared_key)
     print('---clave derivada creada')
-    print(derivated_key)
     
 
 def AES_autenticated_encrypt(data):
@@ -59,11 +57,11 @@ def AES_autenticated_encrypt(data):
     print('--cifrando..')
     return aesccm.encrypt(nonce, data, aad)
 
-def AES_autenticated_decrypt(ct):
+def AES_autenticated_decrypt(ct, non):
     print('--creo el objeto AES')
     aesccm = AESCCM(derivated_key)
     print('--descifrando..')
-    return aesccm.decrypt(nonce, ct, aad)
+    return aesccm.decrypt(non, ct, aad)
     
 def Fernet_encrypt(data):
     print(data)
@@ -78,3 +76,15 @@ def Fernet_decrypt(ct):
     print('--descifrando..')
     print(ct)
     return fernet.decrypt(ct)
+
+def decrypt_msg(msg):
+    ms = msg.decode()
+    m = str.split(ms,',')
+    m[0] = base64.b64decode(m[0]).decode()
+ 
+    if m[0] == 'fernet':
+        print('--metodo seleccionado fernet')
+        return Fernet_decrypt(base64.b64decode(m[1]))
+    if m[0] == 'AES-CCM':
+        print('--metodo seleccionado AES-CCM')
+        return AES_autenticated_decrypt(base64.b64decode(m[1]), base64.b64decode(m[2]))
