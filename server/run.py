@@ -11,10 +11,12 @@ broker_auth = {'username': "try", 'password':"try"}
 
 def on_connect(client, userdata, flags, rc):
     print("Connected with result code "+str(rc))
+    client.subscribe('zzz')
     client.subscribe("register")
     client.subscribe('pub_k')
     security.gen_keys()
     print('claves generadas')
+    
 
 
 def on_message(client, userdata, msg):
@@ -36,6 +38,9 @@ def on_message(client, userdata, msg):
         m = security.decrypt_msg(msg.payload)
         print(m)
         print('jejeje')
+    else:
+        m = 'hola caracola'
+        socketio.emit('message',m)
 
 client = mqtt.Client()
 client.on_connect = on_connect
